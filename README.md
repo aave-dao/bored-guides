@@ -10,6 +10,12 @@ Aave guides for different ecosystem workflows. Each guide describes a repeatable
 | ----- | ----------- |
 | [a.DI/Governance network expansions](./adi-governance-network-expansions.md) | Procedure for expanding a.DI and Aave Governance to new networks |
 
+## Disclaimers
+
+- These guides are high-level descriptions of different procedures, with varying depth of detail. Whoever applies them **must** understand the context of application and have sufficient technical and product expertise.
+- All procedures and guides are ever-growing, organic documents that the elected maintainer should keep updated.
+- These guides do **not** guarantee 100% correctness or completeness of any procedure. BGD Labs (or other contributors) assumes no liability for misapplication and/or lack of expertise when executing a flow using a guide as reference.
+
 ---
 
 Created by [BGD Labs](https://bgdlabs.com/)
