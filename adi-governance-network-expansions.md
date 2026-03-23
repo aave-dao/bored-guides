@@ -295,6 +295,109 @@ The [governance interface](https://vote.onaave.com/) is where governance partici
 
 ---
 
+## a.DI Message Retry Guide
+
+Cross-chain messages can occasionally fail to be delivered on one or more bridge adapters. When this happens, the a.DI system provides two retry mechanisms to recover message delivery without requiring a governance proposal. Retries are executed by the **Retry Guardian** (a technical team Safe, e.g. BGD) through the **GranularGuardian** contract, or by the owner (Executor Lvl 1).
+
+### When to Retry
+
+A retry should be considered when:
+
+- **A bridge adapter failed to deliver a message** — e.g., the bridge provider experienced downtime or a temporary issue, and the message was not relayed to the destination chain.
+- **Not enough confirmations were reached** — the message was delivered by some adapters but not enough to meet the required confirmation threshold on the destination CCC.
+- **A bridge adapter was added after the message was sent** — and you want to use the new adapter to provide additional confirmations for an already-sent message.
+
+You can monitor message delivery status on the [a.DI dashboard](https://adi.onaave.com/), which shows envelope and transaction status across all networks.
+
+### Understanding Envelopes and Transactions
+
+Before retrying, it's important to understand the two core data structures:
+
+- **Envelope** — the logical message. It contains the nonce, origin address, destination address, origin/destination chain IDs, and the message payload. A single envelope represents one governance action to be delivered.
+- **Transaction** — a transport wrapper around an envelope. Each time an envelope is sent (or retried via `retryEnvelope`), a new transaction is created with its own nonce. Each transaction is sent across bridge adapters.
+
+A single **Envelope** can have multiple **Transactions** associated with it. Each Transaction is an independent delivery attempt that goes through the bridge adapters.
+
+### Two Retry Methods
+
+#### `retryEnvelope`
+
+```solidity
+function retryEnvelope(
+    Envelope memory envelope,
+    uint256 gasLimit
+) external returns (bytes32)
+```
+
+Creates a **new Transaction** (with a new nonce) wrapping the same Envelope and sends it through **all** registered bridge adapters for the destination chain.
+
+**When to use:** When the envelope needs a fresh delivery attempt. This is typically used when confirmations were invalidated on the receiver side, or when the original transactions are no longer viable. Since a new transaction is created, confirmation counts on the receiver **start from zero**.
+
+#### `retryTransaction`
+
+```solidity
+function retryTransaction(
+    bytes memory encodedTransaction,
+    uint256 gasLimit,
+    address[] memory bridgeAdaptersToRetry
+) external
+```
+
+Re-sends an **existing Transaction** (same transaction ID) to **specific bridge adapters** that you choose.
+
+**When to use:** When the initial forwarding failed on some bridges but succeeded on others, and you need additional confirmations to reach the required threshold. Since the same transaction is re-sent, confirmations on the receiver **accumulate** with any previous successful deliveries. This is the most common retry scenario.
+
+| Aspect | `retryEnvelope` | `retryTransaction` |
+|---|---|---|
+| Creates new Transaction? | Yes (new nonce) | No (reuses existing) |
+| Receiver-side confirmations | Start from zero | Accumulate with prior |
+| Bridge adapters used | All registered adapters | Caller-specified subset |
+| Typical use case | Envelope invalidated on receiver | Some bridges failed, need more confirmations |
+
+### Getting the Data for a Retry
+
+To retry a message, you need to retrieve the envelope or transaction data from on-chain events. There are two main approaches:
+
+**From the a.DI dashboard** — The [a.DI dashboard](https://adi.onaave.com/) displays envelope and transaction details. You can find the envelope ID and transaction data for any message from here.
+
+**From on-chain events** — Query the CCC contract events on the origin chain (typically Ethereum):
+
+- `EnvelopeRegistered(bytes32 indexed envelopeId, Envelope envelope)` — emitted when the envelope was first sent. This gives you the full Envelope struct needed for `retryEnvelope`.
+- `TransactionForwardingAttempted(bytes32 transactionId, bytes32 indexed envelopeId, bytes encodedTransaction, uint256 destinationChainId, address indexed bridgeAdapter, address destinationBridgeAdapter, bool indexed adapterSuccessful, bytes returnData)` — emitted for each bridge adapter attempt. The `encodedTransaction` field gives you the bytes needed for `retryTransaction`, and `adapterSuccessful` tells you which adapters failed (The adapters to send for retry, should be the origin adapter addresses you want to retry).
+
+You can query these events using tools like `cast logs` (from Foundry), Etherscan's event log viewer, or directly through an RPC provider.
+
+### Generating the Retry Calldata
+
+Once you have the necessary data, you can generate the calldata for the retry call using Foundry's `cast`:
+
+**For `retryEnvelope`:**
+```bash
+cast calldata "retryEnvelope((uint256,address,address,uint256,uint256,bytes),uint256)" \
+  "(NONCE,ORIGIN_ADDRESS,DESTINATION_ADDRESS,ORIGIN_CHAIN_ID,DESTINATION_CHAIN_ID,MESSAGE_BYTES)" \
+  GAS_LIMIT
+```
+
+**For `retryTransaction`:**
+```bash
+cast calldata "retryTransaction(bytes,uint256,address[])" \
+  ENCODED_TRANSACTION_BYTES \
+  GAS_LIMIT \
+  "[ADAPTER_ADDRESS_1,ADAPTER_ADDRESS_2]"
+```
+
+The calldata is then submitted through the **GranularGuardian** contract by the Retry Guardian Safe. The GranularGuardian wraps these CCC functions with role-based access control, so the Retry Guardian Safe calls the corresponding function on the GranularGuardian, which in turn calls the CCC.
+
+### Verifying the Retry
+
+After executing the retry:
+
+1. Check the [a.DI dashboard](https://adi.onaave.com/) to confirm the message status has updated
+2. Verify that `TransactionForwardingAttempted` events were emitted with `adapterSuccessful = true` for the retried adapters
+3. On the destination chain, verify that the required confirmation threshold has been reached and the message was delivered to the destination contract
+
+---
+
 ## Frequently Asked Questions (FAQ)
 
 ### Technical Questions
@@ -352,6 +455,34 @@ A: If a bridge provider becomes unavailable or is compromised:
 3. The compromised adapter can be permanently removed via governance
 
 This is why multi-bridge redundancy is critical (when not L2 Network) - no single bridge provider can halt governance.
+
+---
+
+### Retry Questions
+
+**Q: Should I use `retryEnvelope` or `retryTransaction`?**
+
+A: In most cases, use `retryTransaction`. This re-sends an existing transaction to specific bridge adapters that failed, and confirmations accumulate with previous successful deliveries. Use `retryEnvelope` only when the envelope has been invalidated on the receiver side and you need a completely fresh delivery attempt (confirmations restart from zero).
+
+**Q: Can a retry change or alter the original message?**
+
+A: No. Retries can only re-send messages that were already registered on the CCC. The envelope contents (origin, destination, message payload) are immutable. The retry mechanism cannot be used to inject new messages or modify existing ones — it can only re-deliver what was already sent.
+
+**Q: What if the retry also fails?**
+
+A: You can retry as many times as needed. If a specific bridge adapter keeps failing, use `retryTransaction` with a different set of adapters, or use `retryEnvelope` to create a new transaction sent through all registered adapters. If all adapters are consistently failing, the issue likely lies with the destination network or the bridge providers themselves, and should be investigated before further retries.
+
+**Q: Who can execute a retry?**
+
+A: Retries can be executed by the **Retry Guardian** (a technical team Safe, e.g. BGD) through the GranularGuardian contract, or by the **owner** (Executor Lvl 1, i.e. governance). The Retry Guardian role is purely operational — it cannot modify any system configuration, only re-deliver already-sent messages.
+
+**Q: What gas limit should I use for retries?**
+
+A: The gas limit parameter specifies the gas to be used on the destination chain for message delivery. It should generally match or exceed the gas limit used in the original transaction. If the original delivery ran out of gas on the destination, increasing the gas limit on the retry may resolve the issue.
+
+**Q: Can I retry a message on a bridge adapter that wasn't used in the original send?**
+
+A: With `retryTransaction`, you can only retry on adapters that are currently registered for the destination chain — but the adapter does not need to have been used in the original send. With `retryEnvelope`, a new transaction is created and sent through all currently registered adapters, including any that were added after the original message was sent.
 
 ---
 
