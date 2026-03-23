@@ -62,6 +62,13 @@ The upkeep registration and funding are managed through the aave-robot infrastru
 
 Note that the execution of the emergency action is permissionless; anyone can trigger it directly if the conditions are met, independent of the Keeper.
 
+### 3.4 Monitoring triggers
+
+To detect PoR emergency actions on-chain, off-chain monitors should observe the following events emitted by the `ProofOfReserveExecutor`:
+
+- `EmergencyActionExecuted`: emitted when an emergency action is triggered on the pool.
+- `AssetIsNotBacked`: emitted for each reserve found unbacked during that execution.
+
 ## 4. General tips
 
 - The Proof of Reserve system is designed to accommodate different types of reserve backing - cross-chain bridge assets and off-chain real-world assets are both valid use cases.
