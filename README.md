@@ -11,6 +11,7 @@ Aave guides for different ecosystem workflows. Each guide describes a repeatable
 | [a.DI/Governance network expansions](./adi-governance-network-expansions.md) | Procedure for expanding a.DI and Aave Governance to new networks |
 | [Aave Seatbelt](https://github.com/aave-dao/seatbelt-gov-v3) | Native documentation of the Aave Seatbelt tool, used to simulate and verify changes to Aave through governance proposals or similar architectures |
 | [Aave custom price feeds](./aave-custom-price-feeds.md) | Procedure for deploying and maintaining custom price feeds used on the Aave protocol |
+| [Proof of Reserve](./aave-proof-of-reserves.md) | Procedure for the Proof of Reserve system used on the Aave protocol |
 
 ## Disclaimers
 
