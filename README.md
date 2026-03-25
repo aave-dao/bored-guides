@@ -14,6 +14,7 @@ Aave guides for different ecosystem workflows. Each guide describes a repeatable
 | [Proof of Reserve](./aave-proof-of-reserves.md) | Procedure for the Proof of Reserve system used on the Aave protocol |
 | [Aave onchain rewards management](./aave-rewards-management.md) | High-level overview and procedures for Aave v3 and Umbrella on-chain rewards management |
 | [Umbrella maintenance and expansion](./umbrella-maintenance-expansion.md) | Maintenance and expansion guide for Aave Umbrella |
+| [Aave v3 asset listings procedure](./aave-v3-asset-listings.md) | Overview of the procedure to list assets on Aave v3 |
 
 ## Disclaimers
 
