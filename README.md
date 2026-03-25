@@ -13,6 +13,7 @@ Aave guides for different ecosystem workflows. Each guide describes a repeatable
 | [Aave custom price feeds](./aave-custom-price-feeds.md) | Procedure for deploying and maintaining custom price feeds used on the Aave protocol |
 | [Proof of Reserve](./aave-proof-of-reserves.md) | Procedure for the Proof of Reserve system used on the Aave protocol |
 | [Aave onchain rewards management](./aave-rewards-management.md) | High-level overview and procedures for Aave v3 and Umbrella on-chain rewards management |
+| [Umbrella maintenance and expansion](./umbrella-maintenance-expansion.md) | Maintenance and expansion guide for Aave Umbrella |
 
 ## Disclaimers
 
