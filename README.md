@@ -16,6 +16,7 @@ Aave guides for different ecosystem workflows. Each guide describes a repeatable
 | [Umbrella maintenance and expansion](./umbrella-maintenance-expansion.md) | Maintenance and expansion guide for Aave Umbrella |
 | [Aave v3 asset listings procedure](./aave-v3-asset-listings.md) | Overview of the procedure to list assets on Aave v3 |
 | [Aave v3 network expansion procedure](./network-expansions.md) | High-level procedures for Aave v3 network expansions |
+| [Risk agents maintenance-expansion](./risk-agents-maintenance.md) | Guide for maintenance and expansion of risk agents |
 
 ## Disclaimers
 
