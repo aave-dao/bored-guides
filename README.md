@@ -17,6 +17,7 @@ Aave guides for different ecosystem workflows. Each guide describes a repeatable
 | [Aave v3 asset listings procedure](./aave-v3-asset-listings.md) | Overview of the procedure to list assets on Aave v3 |
 | [Aave v3 network expansion procedure](./network-expansions.md) | High-level procedures for Aave v3 network expansions |
 | [Risk agents maintenance-expansion](./risk-agents-maintenance.md) | Guide for maintenance and expansion of risk agents |
+| [Aave Robots overview](./aave-robots.md) | High-level overview and maintenance of Aave Robots (automations) |
 
 ## Disclaimers
 
